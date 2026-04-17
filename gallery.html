@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galerie</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="gallery-hero" id="hero">
+  <div class="gallery-hero__bg" id="hero-bg"></div>
+  <div class="gallery-hero__overlay"></div>
+
+
+  <div class="gallery-hero__bottom">
+    <div>
+      <h1 class="gallery-hero__title" id="gallery-title">Galerie</h1>
+      <p class="gallery-hero__subtitle" id="gallery-desc"></p>
+    </div>
+    <button class="btn-view-gallery" onclick="document.getElementById('photos').scrollIntoView({behavior:'smooth'})">
+      Galerie ansehen
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+      </svg>
+    </button>
+  </div>
+</section>
+
+<!-- STICKY HEADER -->
+<div class="gallery-header" id="photos">
+  <div class="gallery-header__left">
+    <h2 id="header-title">Galerie</h2>
+    <span id="header-count"></span>
+  </div>
+  <div class="gallery-header__actions">
+    <button class="icon-btn with-label" id="dl-all-btn" style="display:none" onclick="openDownloadModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+      Download
+    </button>
+  </div>
+</div>
+
+<!-- PHOTO GRID -->
+<section class="photo-section">
+  <div id="photo-grid-wrap">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<!-- BACK TO TOP -->
+<div style="text-align:center;padding:60px 0 80px;background:var(--bg);">
+  <button class="btn-view-gallery" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M12 19V5M5 12l7-7 7 7"/>
+    </svg>
+    Nach oben
+  </button>
+</div>
+
+<!-- DOWNLOAD MODAL -->
+<div class="dl-modal" id="dl-modal">
+  <div class="dl-modal__box">
+    <button class="dl-modal__close" onclick="closeDownloadModal()">×</button>
+    <h3>Download</h3>
+    <p>Wähle die gewünschte Auflösung:</p>
+
+    <div class="dl-modal__choices" id="dl-choices">
+      <button class="dl-choice" onclick="startDownload('web')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <path d="M21 15l-5-5L5 21"/>
+        </svg>
+        <span class="dl-choice__label">Web</span>
+        <span class="dl-choice__sub">1920px · optimiert</span>
+      </button>
+      <button class="dl-choice" onclick="startDownload('original')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        <span class="dl-choice__label">Original</span>
+        <span class="dl-choice__sub">volle Auflösung</span>
+      </button>
+    </div>
+
+    <div class="dl-progress" id="dl-progress">
+      <div class="dl-progress__bar"><div class="dl-progress__fill" id="dl-bar"></div></div>
+      <p class="dl-progress__text" id="dl-status">Vorbereitung …</p>
+    </div>
+
+    <div class="dl-fallback" id="dl-fallback">
+      <p id="dl-fallback-msg"></p>
+      <div class="dl-fallback__list" id="dl-fallback-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <button class="lightbox__close" id="lb-close">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M18 6L6 18M6 6l12 12"/>
+    </svg>
+  </button>
+  <button class="lightbox__btn lightbox__prev" id="lb-prev">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+  <div class="lightbox__img-wrap">
+    <img class="lightbox__img" id="lb-img" src="" alt="">
+  </div>
+  <button class="lightbox__btn lightbox__next" id="lb-next">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 18l6-6-6-6"/>
+    </svg>
+  </button>
+  <div class="lightbox__toolbar">
+    <a id="lb-dl-web" class="btn-outline-small" href="#">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+      Web
+    </a>
+    <a id="lb-open-drive" class="btn-outline-small" href="#" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+      </svg>
+      Vollbild
+    </a>
+    <span class="lightbox__counter" id="lb-counter">1 / 1</span>
+    <a id="lb-dl-full" class="btn-outline-small" href="#" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+      Original
+    </a>
+  </div>
+</div>
+
+<script>
+const API = 'https://www.googleapis.com/drive/v3/files';
+let images = [];
+let currentIndex = 0;
+
+const API_KEY = 'AIzaSyA7yei6weD92EHoF30gkgLMqHH2hynQmu8';
+
+function driveUrl(id) {
+  return `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${API_KEY}`;
+}
+function thumbUrl(file, size) {
+  const lh3 = `https://lh3.googleusercontent.com/d/${file.id || file}=s${size}`;
+  return `https://wsrv.nl/?url=${encodeURIComponent(lh3)}`;
+}
+function downloadUrl(id) { return `https://drive.google.com/uc?id=${id}&export=download`; }
+function getParam(name) { return new URLSearchParams(location.search).get(name); }
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+async function loadConfig() {
+  const r = await fetch('config.json');
+  return r.json();
+}
+
+async function loadGallery(folderId, apiKey) {
+  let all = [], pageToken = null;
+  do {
+    const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
+    const fields = encodeURIComponent('nextPageToken,files(id,name,thumbnailLink)');
+    let url = `${API}?q=${q}&fields=${fields}&orderBy=name&pageSize=100&key=${apiKey}`;
+    if (pageToken) url += `&pageToken=${pageToken}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Drive API Fehler: ${r.status}`);
+    const data = await r.json();
+    all = all.concat(data.files || []);
+    pageToken = data.nextPageToken || null;
+  } while (pageToken);
+  return all;
+}
+
+async function getFolderName(folderId, apiKey) {
+  const r = await fetch(`${API}/${folderId}?fields=name&key=${apiKey}`);
+  if (!r.ok) return 'Galerie';
+  return (await r.json()).name || 'Galerie';
+}
+
+// ── LIGHTBOX ──
+function openLightbox(index) {
+  currentIndex = index;
+  renderLightbox();
+  document.getElementById('lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function renderLightbox() {
+  const img = images[currentIndex];
+  const lbImg = document.getElementById('lb-img');
+  lbImg.src = '';
+  lbImg.src = thumbUrl(img, 1600);
+  lbImg.alt = img.name;
+  document.getElementById('lb-counter').textContent = `${currentIndex + 1} / ${images.length}`;
+  document.getElementById('lb-dl-web').dataset.src = thumbUrl(img, 1600);
+  document.getElementById('lb-dl-web').dataset.name = img.name.match(/\.[^.]+$/) ? img.name : img.name + '.jpg';
+  document.getElementById('lb-dl-full').href = downloadUrl(img.id);
+  document.getElementById('lb-open-drive').href = `https://drive.google.com/file/d/${img.id}/view`;
+}
+function prev() { currentIndex = (currentIndex - 1 + images.length) % images.length; renderLightbox(); }
+function next() { currentIndex = (currentIndex + 1) % images.length; renderLightbox(); }
+
+document.getElementById('lb-dl-web').addEventListener('click', async e => {
+  e.preventDefault();
+  const btn = e.currentTarget;
+  const url = btn.dataset.src;
+  const name = btn.dataset.name;
+  const blob = await (await fetch(url)).blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('lb-prev').addEventListener('click', prev);
+document.getElementById('lb-next').addEventListener('click', next);
+document.getElementById('lb-close').addEventListener('click', closeLightbox);
+document.getElementById('lightbox').addEventListener('click', e => { if (e.target === e.currentTarget) closeLightbox(); });
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft') prev();
+  if (e.key === 'ArrowRight') next();
+  if (e.key === 'Escape') closeLightbox();
+});
+let touchStartX = 0;
+document.getElementById('lightbox').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.getElementById('lightbox').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) dx < 0 ? next() : prev();
+});
+
+// ── PARALLAX ──
+window.addEventListener('scroll', () => {
+  const bg = document.getElementById('hero-bg');
+  if (bg) bg.style.transform = `translateY(${window.scrollY * 0.35}px)`;
+});
+
+// ── DOWNLOAD ALL ──
+function openDownloadModal() {
+  document.getElementById('dl-modal').classList.add('active');
+  document.getElementById('dl-choices').style.display = '';
+  document.getElementById('dl-progress').classList.remove('active');
+  document.getElementById('dl-fallback').classList.remove('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeDownloadModal() {
+  document.getElementById('dl-modal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.getElementById('dl-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDownloadModal(); });
+
+function setProgress(done, total) {
+  document.getElementById('dl-bar').style.width = `${Math.round((done / total) * 100)}%`;
+  document.getElementById('dl-status').textContent = `${done} von ${total} Bildern …`;
+}
+
+function showFallback(urls, resolution) {
+  document.getElementById('dl-progress').classList.remove('active');
+  document.getElementById('dl-fallback').classList.add('active');
+  document.getElementById('dl-fallback-msg').textContent =
+    resolution === 'web' ? 'ZIP nicht möglich (CORB). Einzeln öffnen:' : 'Einzeln herunterladen:';
+  const list = document.getElementById('dl-fallback-list');
+  list.innerHTML = '';
+  urls.forEach(({ name, url }) => {
+    const item = document.createElement('div');
+    item.className = 'dl-fallback__item';
+    item.innerHTML = `<span>${name}</span><a href="${url}" target="_blank" rel="noopener">Öffnen ↗</a>`;
+    list.appendChild(item);
+  });
+}
+
+async function startDownload(resolution) {
+  document.getElementById('dl-choices').style.display = 'none';
+  document.getElementById('dl-progress').classList.add('active');
+  setProgress(0, images.length);
+  document.getElementById('dl-status').textContent = 'Verbindung wird geprüft …';
+
+  const urls = images.map(img => ({
+    name: img.name.match(/\.[^.]+$/) ? img.name : img.name + '.jpg',
+    url: resolution === 'web' ? thumbUrl(img, 1920) : driveUrl(img.id),
+    id: img.id
+  }));
+
+  try {
+    const test = await fetch(urls[0].url, { signal: AbortSignal.timeout(8000) });
+    if (!test.ok) throw new Error();
+    await test.blob();
+  } catch {
+    showFallback(urls, resolution);
+    return;
+  }
+
+  const zip = new JSZip();
+  let done = 0;
+  setProgress(0, images.length);
+
+  await Promise.all(urls.map(async ({ name, url }) => {
+    try {
+      const blob = await (await fetch(url)).blob();
+      const ext = blob.type.split('/')[1]?.replace('jpeg','jpg') || 'jpg';
+      zip.file(name.match(/\.[^.]+$/) ? name : `${name}.${ext}`, blob);
+    } catch (_) {}
+    setProgress(++done, images.length);
+  }));
+
+  document.getElementById('dl-status').textContent = 'ZIP wird erstellt …';
+  const content = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = `${document.title || 'galerie'}_${resolution}.zip`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  closeDownloadModal();
+}
+
+// ── INIT ──
+async function init() {
+  const folderId = getParam('id');
+  if (!folderId) { location.href = 'index.html'; return; }
+
+  const config = await loadConfig();
+  const { apiKey, galleries = {} } = config;
+  const meta = galleries[folderId] || {};
+
+  let folderName, files;
+  try {
+    [folderName, files] = await Promise.all([
+      getFolderName(folderId, apiKey),
+      loadGallery(folderId, apiKey)
+    ]);
+  } catch (e) {
+    document.getElementById('photo-grid-wrap').innerHTML =
+      `<div class="error-msg"><strong>Fehler beim Laden.</strong>${e.message}</div>`;
+    return;
+  }
+
+  images = files;
+  document.title = folderName;
+  document.getElementById('gallery-title').textContent = folderName;
+  document.getElementById('header-title').textContent = folderName;
+  document.getElementById('header-count').textContent = `${files.length} ${files.length === 1 ? 'Bild' : 'Bilder'}`;
+
+  if (meta.description) {
+    document.getElementById('gallery-desc').textContent = meta.description;
+  }
+
+  const coverFile = files.find(f => f.id === meta.coverImageId) || files[0];
+  if (coverFile) {
+    document.getElementById('hero-bg').style.backgroundImage = `url('${thumbUrl(coverFile, 1920)}')`;
+  }
+
+  if (files.length === 0) {
+    document.getElementById('photo-grid-wrap').innerHTML =
+      `<div class="error-msg"><strong>Keine Bilder gefunden.</strong></div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'photo-grid';
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target.querySelector('img[data-src]');
+      if (img) {
+        img.src = img.dataset.src;
+        img.onload = () => entry.target.classList.remove('skeleton');
+        img.onerror = () => entry.target.classList.remove('skeleton');
+        img.removeAttribute('data-src');
+      }
+      observer.unobserve(entry.target);
+    });
+  }, { rootMargin: '300px' });
+
+  files.forEach((file, i) => {
+    const item = document.createElement('div');
+    item.className = 'photo-item skeleton';
+    item.innerHTML = `
+      <img data-src="${thumbUrl(file, 800)}" alt="${file.name}">
+      <div class="photo-item__overlay">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/>
+        </svg>
+      </div>
+    `;
+    item.addEventListener('click', () => openLightbox(i));
+    observer.observe(item);
+    grid.appendChild(item);
+  });
+
+  document.getElementById('photo-grid-wrap').innerHTML = '';
+  document.getElementById('photo-grid-wrap').appendChild(grid);
+  document.getElementById('dl-all-btn').style.display = '';
+}
+
+init().catch(e => {
+  document.getElementById('photo-grid-wrap').innerHTML =
+    `<div class="error-msg"><strong>Fehler.</strong>${e.message}</div>`;
+});
+</script>
+</body>
+</html>

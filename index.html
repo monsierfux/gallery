@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galerien</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="index-header">
+  <span class="index-logo" id="site-title">Galerien</span>
+</header>
+
+<main>
+  <section class="index-hero">
+    <h1 id="hero-title">Meine Galerien</h1>
+    <p id="hero-subtitle"></p>
+  </section>
+
+  <div id="gallery-list">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = 'https://www.googleapis.com/drive/v3/files';
+
+async function loadConfig() {
+  const r = await fetch('config.json');
+  return r.json();
+}
+
+const API_KEY = 'AIzaSyA7yei6weD92EHoF30gkgLMqHH2hynQmu8';
+
+function thumbUrl(file, size = 600) {
+  const lh3 = `https://lh3.googleusercontent.com/d/${file?.id || file}=s${size}`;
+  return `https://wsrv.nl/?url=${encodeURIComponent(lh3)}`;
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+async function listFolders(rootId, apiKey) {
+  const q = encodeURIComponent(`'${rootId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const url = `${API}?q=${q}&fields=${encodeURIComponent('files(id,name)')}&orderBy=name&key=${apiKey}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Drive API Fehler: ${r.status}`);
+  return (await r.json()).files || [];
+}
+
+async function getFirstImage(folderId, apiKey) {
+  const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
+  const url = `${API}?q=${q}&fields=${encodeURIComponent('files(id,thumbnailLink)')}&pageSize=1&orderBy=name&key=${apiKey}`;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  return (await r.json()).files?.[0] ?? null;
+}
+
+async function countImages(folderId, apiKey) {
+  const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
+  const url = `${API}?q=${q}&fields=${encodeURIComponent('files(id)')}&pageSize=1000&key=${apiKey}`;
+  const r = await fetch(url);
+  if (!r.ok) return 0;
+  return ((await r.json()).files || []).length;
+}
+
+function renderCard(folder, coverFile, count) {
+  const card = document.createElement('a');
+  card.className = 'gallery-card';
+  card.href = `gallery.html?id=${folder.id}`;
+
+  const img = coverFile
+    ? `<img src="${thumbUrl(coverFile, 800)}" alt="${folder.name}" loading="lazy">`
+    : '';
+
+  card.innerHTML = `
+    ${img}
+    <div class="gallery-card__overlay">
+      <span class="gallery-card__name">${folder.name}</span>
+      <span class="gallery-card__count">${count} ${count === 1 ? 'Bild' : 'Bilder'}</span>
+    </div>
+  `;
+  return card;
+}
+
+async function init() {
+  const config = await loadConfig();
+  const { apiKey, rootFolderId, site, galleries = {} } = config;
+
+  document.title = site?.title || 'Galerien';
+  document.getElementById('site-title').textContent = site?.title || 'Galerien';
+  document.getElementById('hero-title').textContent = site?.title || 'Meine Galerien';
+  if (site?.subtitle) document.getElementById('hero-subtitle').textContent = site.subtitle;
+
+  const container = document.getElementById('gallery-list');
+
+  let folders;
+  try {
+    folders = await listFolders(rootFolderId, apiKey);
+  } catch (e) {
+    container.innerHTML = `<div class="error-msg"><strong>Fehler.</strong>${e.message}</div>`;
+    return;
+  }
+
+  if (folders.length === 0) {
+    container.innerHTML = `<div class="error-msg"><strong>Keine Galerien gefunden.</strong>Erstelle Unterordner im Drive-Hauptordner.</div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'gallery-grid';
+  container.innerHTML = '';
+  container.appendChild(grid);
+
+  await Promise.all(folders.map(async (folder) => {
+    const meta = galleries[folder.id] || {};
+    const firstFile = await getFirstImage(folder.id, apiKey);
+    const coverFile = meta.coverImageId ? { id: meta.coverImageId } : firstFile;
+    const count = await countImages(folder.id, apiKey);
+    grid.appendChild(renderCard(folder, coverFile, count));
+  }));
+}
+
+init().catch(e => {
+  document.getElementById('gallery-list').innerHTML =
+    `<div class="error-msg"><strong>Fehler.</strong>${e.message}</div>`;
+});
+</script>
+</body>
+</html>
