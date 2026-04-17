@@ -1,8 +1,7 @@
 const CACHE = 'gallery-images-v1';
 
 const shouldCache = url =>
-  url.includes('lh3.googleusercontent.com') ||
-  (url.includes('googleapis.com/drive') && url.includes('alt=media'));
+  url.includes('wsrv.nl');
 
 self.addEventListener('fetch', event => {
   if (!shouldCache(event.request.url)) return;

@@ -1,15 +1,41 @@
 @import url('https://use.typekit.net/eil2gmp.css');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0d0d0d;
-  --bg2: #141414;
+  --bg: #181818;
+  --bg2: #1f1f1f;
   --fg: #ffffff;
   --muted: rgba(255,255,255,0.45);
   --border: rgba(255,255,255,0.1);
-  --gap: 3px;
+  --btn-color: #fff;
+  --btn-border: rgba(255,255,255,0.5);
+  --btn-hover-bg: rgba(255,255,255,0.12);
+  --btn-hover-border: rgba(255,255,255,0.8);
+  --gap: 8px;
   --radius: 0px;
+}
+
+body.light .gallery-hero__bottom .btn-view-gallery {
+  color: #fff;
+  border-color: rgba(255,255,255,0.5);
+}
+body.light .gallery-hero__bottom .btn-view-gallery:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.8);
+}
+
+body.light {
+  --bg: #f2f2f2;
+  --bg2: #e8e8e8;
+  --fg: #111111;
+  --muted: rgba(0,0,0,0.45);
+  --border: rgba(0,0,0,0.1);
+  --btn-color: #111;
+  --btn-border: rgba(0,0,0,0.4);
+  --btn-hover-bg: rgba(0,0,0,0.07);
+  --btn-hover-border: rgba(0,0,0,0.7);
 }
 
 html { scroll-behavior: smooth; }
@@ -43,9 +69,9 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(
     to bottom,
     rgba(0,0,0,0.25) 0%,
-    rgba(0,0,0,0) 40%,
-    rgba(0,0,0,0.5) 80%,
-    rgba(0,0,0,0.75) 100%
+    rgba(0,0,0,0) 35%,
+    rgba(0,0,0,0.55) 70%,
+    rgba(0,0,0,0.85) 100%
   );
 }
 
@@ -78,17 +104,20 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 0 36px 40px;
+  padding: 0 60px 60px;
   gap: 24px;
 }
 
 .gallery-hero__title {
-  font-family: 'proxima-nova', sans-serif;
-  font-size: clamp(1.6rem, 3.2vw, 3.2rem);
-  font-weight: 800;
-  letter-spacing: 0.18em;
+  font-family: 'Raleway', sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: 2.6px;
+  line-height: 1.1;
   text-transform: uppercase;
-  line-height: 1.0;
+  font-variant-numeric: lining-nums;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
   color: #fff;
   white-space: nowrap;
 }
@@ -112,17 +141,17 @@ a { color: inherit; text-decoration: none; }
   font-weight: 300;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 2px solid rgba(255,255,255,0.5);
-  color: #fff;
+  border: 2px solid var(--btn-border);
+  color: var(--btn-color);
   background: transparent;
   cursor: pointer;
   font-family: 'proxima-nova', sans-serif;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
   white-space: nowrap;
 }
 .btn-view-gallery:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.8);
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
 }
 
 /* ── GALLERY STICKY HEADER ── */
@@ -131,25 +160,31 @@ a { color: inherit; text-decoration: none; }
   top: 0;
   z-index: 100;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 36px;
+  padding: 20px 36px 14px;
 }
 
+.gallery-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
 .gallery-header__left h2 {
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--fg);
+  line-height: 1.2;
 }
 .gallery-header__left span {
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   color: var(--muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .gallery-header__actions {
@@ -167,16 +202,16 @@ a { color: inherit; text-decoration: none; }
   font-weight: 300;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 2px solid rgba(255,255,255,0.5);
-  color: #fff;
+  border: 2px solid var(--btn-border);
+  color: var(--btn-color);
   background: transparent;
   cursor: pointer;
   font-family: 'proxima-nova', sans-serif;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 .icon-btn:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.8);
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
 }
 
 /* ── MASONRY PHOTO GRID ── */
@@ -360,6 +395,54 @@ a { color: inherit; text-decoration: none; }
   font-family: 'proxima-nova', sans-serif;
 }
 .btn-outline-small:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+
+/* ── THEME TOGGLE ── */
+.theme-toggle {
+  width: 56px;
+  height: 26px;
+  border-radius: 13px;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s, border-color 0.3s;
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px;
+  margin-right: 24px;
+}
+.theme-toggle.on {
+  background: rgba(0,0,0,0.1);
+  border-color: rgba(0,0,0,0.25);
+}
+.theme-toggle__icon {
+  color: rgba(255,255,255,0.6);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+body.light .theme-toggle__icon {
+  color: rgba(0,0,0,0.5);
+}
+.theme-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.3s, background 0.3s;
+  z-index: 2;
+}
+.theme-toggle.on .theme-toggle__knob {
+  transform: translateX(30px);
+  background: #444;
+}
 
 /* ── INDEX PAGE ── */
 .index-header {

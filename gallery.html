@@ -36,6 +36,15 @@
     <span id="header-count"></span>
   </div>
   <div class="gallery-header__actions">
+    <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Light/Dark Mode">
+      <svg class="theme-toggle__icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <div class="theme-toggle__knob"></div>
+      <svg class="theme-toggle__icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </svg>
+    </div>
     <button class="icon-btn with-label" id="dl-all-btn" style="display:none" onclick="openDownloadModal()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -57,10 +66,10 @@
 <!-- BACK TO TOP -->
 <div style="text-align:center;padding:60px 0 80px;background:var(--bg);">
   <button class="btn-view-gallery" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    Nach oben
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle">
       <path d="M12 19V5M5 12l7-7 7 7"/>
     </svg>
-    Nach oben
   </button>
 </div>
 
@@ -128,12 +137,6 @@
       </svg>
       Web
     </a>
-    <a id="lb-open-drive" class="btn-outline-small" href="#" target="_blank">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-      </svg>
-      Vollbild
-    </a>
     <span class="lightbox__counter" id="lb-counter">1 / 1</span>
     <a id="lb-dl-full" class="btn-outline-small" href="#" target="_blank">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -145,6 +148,18 @@
 </div>
 
 <script>
+// ── THEME ──
+function applyTheme(light) {
+  document.body.classList.toggle('light', light);
+  document.getElementById('theme-toggle').classList.toggle('on', light);
+}
+function toggleTheme() {
+  const light = !document.body.classList.contains('light');
+  localStorage.setItem('theme', light ? 'light' : 'dark');
+  applyTheme(light);
+}
+applyTheme(localStorage.getItem('theme') === 'light');
+
 const API = 'https://www.googleapis.com/drive/v3/files';
 let images = [];
 let currentIndex = 0;
@@ -175,7 +190,7 @@ async function loadGallery(folderId, apiKey) {
   let all = [], pageToken = null;
   do {
     const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
-    const fields = encodeURIComponent('nextPageToken,files(id,name,thumbnailLink)');
+    const fields = encodeURIComponent('nextPageToken,files(id,name)');
     let url = `${API}?q=${q}&fields=${fields}&orderBy=name&pageSize=100&key=${apiKey}`;
     if (pageToken) url += `&pageToken=${pageToken}`;
     const r = await fetch(url);
@@ -214,7 +229,6 @@ function renderLightbox() {
   document.getElementById('lb-dl-web').dataset.src = thumbUrl(img, 1600);
   document.getElementById('lb-dl-web').dataset.name = img.name.match(/\.[^.]+$/) ? img.name : img.name + '.jpg';
   document.getElementById('lb-dl-full').href = downloadUrl(img.id);
-  document.getElementById('lb-open-drive').href = `https://drive.google.com/file/d/${img.id}/view`;
 }
 function prev() { currentIndex = (currentIndex - 1 + images.length) % images.length; renderLightbox(); }
 function next() { currentIndex = (currentIndex + 1) % images.length; renderLightbox(); }
@@ -297,7 +311,7 @@ async function startDownload(resolution) {
 
   const urls = images.map(img => ({
     name: img.name.match(/\.[^.]+$/) ? img.name : img.name + '.jpg',
-    url: resolution === 'web' ? thumbUrl(img, 1920) : driveUrl(img.id),
+    url: resolution === 'web' ? thumbUrl(img, 1920) : downloadUrl(img.id),
     id: img.id
   }));
 
