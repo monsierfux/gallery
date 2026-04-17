@@ -373,7 +373,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
 }
 .lightbox__counter {
-  color: var(--muted);
+  color: rgba(255,255,255,0.55);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   padding: 0 10px;
