@@ -14,6 +14,11 @@
   <div class="gallery-hero__bg" id="hero-bg"></div>
   <div class="gallery-hero__overlay"></div>
 
+  <button class="grain-scroll-btn" onclick="document.getElementById('photos').scrollIntoView({behavior:'smooth'})">
+    <svg width="22" height="13" viewBox="0 0 22 13" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 1l10 11L21 1"/>
+    </svg>
+  </button>
 
   <div class="gallery-hero__bottom">
     <div>
@@ -36,6 +41,12 @@
     <span id="header-count"></span>
   </div>
   <div class="gallery-header__actions">
+    <select id="variant-select" class="variant-select" onchange="setVariant(this.value)" title="Design">
+      <option value="studio">Studio</option>
+      <option value="grain">Grain</option>
+      <option value="atelier">Atelier</option>
+      <option value="dusk">Dusk</option>
+    </select>
     <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Light/Dark Mode">
       <svg class="theme-toggle__icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
@@ -148,6 +159,28 @@
 </div>
 
 <script>
+// ── VARIANTS ──
+const VARIANTS = ['studio', 'grain', 'atelier', 'dusk'];
+function applyVariant(variant) {
+  VARIANTS.forEach(v => document.body.classList.remove(`variant-${v}`));
+  if (variant && variant !== 'studio') document.body.classList.add(`variant-${variant}`);
+}
+function setVariant(variant) {
+  applyVariant(variant);
+  if (variant === 'grain' || variant === 'dusk') {
+    const bg = document.getElementById('hero-bg');
+    if (bg) bg.style.transform = '';
+  }
+  const url = new URL(location.href);
+  variant === 'studio' ? url.searchParams.delete('variant') : url.searchParams.set('variant', variant);
+  history.replaceState({}, '', url);
+}
+const _urlVariant = new URLSearchParams(location.search).get('variant');
+if (_urlVariant) {
+  applyVariant(_urlVariant);
+  document.getElementById('variant-select').value = _urlVariant;
+}
+
 // ── THEME ──
 function applyTheme(light) {
   document.body.classList.toggle('light', light);
@@ -164,11 +197,6 @@ const API = 'https://www.googleapis.com/drive/v3/files';
 let images = [];
 let currentIndex = 0;
 
-const API_KEY = 'AIzaSyA7yei6weD92EHoF30gkgLMqHH2hynQmu8';
-
-function driveUrl(id) {
-  return `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${API_KEY}`;
-}
 function thumbUrl(file, size) {
   const lh3 = `https://lh3.googleusercontent.com/d/${file.id || file}=s${size}`;
   return `https://wsrv.nl/?url=${encodeURIComponent(lh3)}`;
@@ -206,6 +234,14 @@ async function getFolderName(folderId, apiKey) {
   const r = await fetch(`${API}/${folderId}?fields=name&key=${apiKey}`);
   if (!r.ok) return 'Galerie';
   return (await r.json()).name || 'Galerie';
+}
+
+async function listFolders(folderId, apiKey) {
+  const q = encodeURIComponent(`'${folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const url = `${API}?q=${q}&fields=${encodeURIComponent('files(id,name)')}&orderBy=name&key=${apiKey}`;
+  const r = await fetch(url);
+  if (!r.ok) return [];
+  return (await r.json()).files || [];
 }
 
 // ── LIGHTBOX ──
@@ -265,6 +301,8 @@ document.getElementById('lightbox').addEventListener('touchend', e => {
 
 // ── PARALLAX ──
 window.addEventListener('scroll', () => {
+  if (document.body.classList.contains('variant-grain') ||
+      document.body.classList.contains('variant-dusk')) return;
   const bg = document.getElementById('hero-bg');
   if (bg) bg.style.transform = `translateY(${window.scrollY * 0.35}px)`;
 });
@@ -356,11 +394,26 @@ async function init() {
   const { apiKey, galleries = {} } = config;
   const meta = galleries[folderId] || {};
 
-  let folderName, files;
+  if (!_urlVariant) {
+    const def = meta.variant || config.site?.defaultVariant || 'studio';
+    applyVariant(def);
+    document.getElementById('variant-select').value = def;
+    if (def !== 'studio') {
+      const u = new URL(location.href);
+      u.searchParams.set('variant', def);
+      history.replaceState({}, '', u);
+    }
+  }
+  if (localStorage.getItem('theme') === null && config.site?.defaultTheme) {
+    applyTheme(config.site.defaultTheme === 'light');
+  }
+
+  let folderName, rootFiles, subFolders;
   try {
-    [folderName, files] = await Promise.all([
+    [folderName, rootFiles, subFolders] = await Promise.all([
       getFolderName(folderId, apiKey),
-      loadGallery(folderId, apiKey)
+      loadGallery(folderId, apiKey),
+      listFolders(folderId, apiKey)
     ]);
   } catch (e) {
     document.getElementById('photo-grid-wrap').innerHTML =
@@ -368,29 +421,56 @@ async function init() {
     return;
   }
 
-  images = files;
+  const isCover = f => /(cover|header)/i.test(f.name.replace(/\.[^.]+$/, ''));
+  const rootCover = rootFiles.find(isCover);
+  rootFiles = rootFiles.filter(f => !isCover(f));
+
+  const sections = subFolders.length > 0
+    ? await Promise.all(subFolders.map(async sf => {
+        const files = await loadGallery(sf.id, apiKey);
+        return { id: sf.id, name: sf.name, files: files.filter(f => !isCover(f)) };
+      }))
+    : [];
+
+  images = [...rootFiles, ...sections.flatMap(s => s.files)];
+  const total = images.length;
+
   document.title = folderName;
   document.getElementById('gallery-title').textContent = folderName;
   document.getElementById('header-title').textContent = folderName;
-  document.getElementById('header-count').textContent = `${files.length} ${files.length === 1 ? 'Bild' : 'Bilder'}`;
+  document.getElementById('header-count').textContent = `${total} ${total === 1 ? 'Bild' : 'Bilder'}`;
+  document.getElementById('gallery-desc').textContent = `${total} ${total === 1 ? 'Bild' : 'Bilder'}`;
 
-  if (meta.description) {
-    document.getElementById('gallery-desc').textContent = meta.description;
-  }
-
-  const coverFile = files.find(f => f.id === meta.coverImageId) || files[0];
+  const coverFile = (meta.coverImageId ? images.find(f => f.id === meta.coverImageId) : null)
+    || rootCover || rootFiles[0] || sections[0]?.files[0];
   if (coverFile) {
     document.getElementById('hero-bg').style.backgroundImage = `url('${thumbUrl(coverFile, 1920)}')`;
   }
 
-  if (files.length === 0) {
+  if (total === 0) {
     document.getElementById('photo-grid-wrap').innerHTML =
       `<div class="error-msg"><strong>Keine Bilder gefunden.</strong></div>`;
     return;
   }
 
-  const grid = document.createElement('div');
-  grid.className = 'photo-grid';
+  // Sub-folder jump nav in sticky header
+  if (sections.length > 0) {
+    const nav = document.createElement('nav');
+    nav.className = 'gallery-header__nav';
+    sections.forEach(s => {
+      const a = document.createElement('a');
+      a.className = 'header-nav-link';
+      a.textContent = s.name;
+      a.href = `#section-${s.id}`;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        document.getElementById(`section-${s.id}`)?.scrollIntoView({ behavior: 'smooth' });
+      });
+      nav.appendChild(a);
+    });
+    const header = document.getElementById('photos');
+    header.insertBefore(nav, header.querySelector('.gallery-header__actions'));
+  }
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -406,7 +486,7 @@ async function init() {
     });
   }, { rootMargin: '300px' });
 
-  files.forEach((file, i) => {
+  function makeItem(file, idx) {
     const item = document.createElement('div');
     item.className = 'photo-item skeleton';
     item.innerHTML = `
@@ -417,13 +497,44 @@ async function init() {
         </svg>
       </div>
     `;
-    item.addEventListener('click', () => openLightbox(i));
+    item.addEventListener('click', () => openLightbox(idx));
     observer.observe(item);
-    grid.appendChild(item);
-  });
+    return item;
+  }
 
-  document.getElementById('photo-grid-wrap').innerHTML = '';
-  document.getElementById('photo-grid-wrap').appendChild(grid);
+  const wrap = document.getElementById('photo-grid-wrap');
+  wrap.innerHTML = '';
+
+  if (sections.length === 0) {
+    const grid = document.createElement('div');
+    grid.className = 'photo-grid';
+    rootFiles.forEach((file, i) => grid.appendChild(makeItem(file, i)));
+    wrap.appendChild(grid);
+  } else {
+    if (rootFiles.length > 0) {
+      const grid = document.createElement('div');
+      grid.className = 'photo-grid';
+      rootFiles.forEach((file, i) => grid.appendChild(makeItem(file, i)));
+      wrap.appendChild(grid);
+    }
+    let offset = rootFiles.length;
+    sections.forEach(section => {
+      const group = document.createElement('div');
+      group.className = 'photo-section-group';
+      group.id = `section-${section.id}`;
+      const h = document.createElement('h3');
+      h.className = 'section-heading';
+      h.textContent = section.name;
+      group.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'photo-grid';
+      section.files.forEach((file, i) => grid.appendChild(makeItem(file, offset + i)));
+      group.appendChild(grid);
+      wrap.appendChild(group);
+      offset += section.files.length;
+    });
+  }
+
   document.getElementById('dl-all-btn').style.display = '';
 }
 

@@ -2,8 +2,10 @@
   "apiKey": "AIzaSyA7yei6weD92EHoF30gkgLMqHH2hynQmu8",
   "rootFolderId": "1BzAJUnyfkRbcPj1g7cIlOlrP4CHw_z-a",
   "site": {
-    "title": "Meine Galerien",
-    "subtitle": "Eine Sammlung von Momenten"
+    "title": "Dennis Gall Photography",
+    "subtitle": "Galerieübersicht",
+    "defaultVariant": "atelier",
+    "defaultTheme": "light"
   },
   "galleries": {
 

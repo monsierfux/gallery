@@ -10,6 +10,15 @@
 
 <header class="index-header">
   <span class="index-logo" id="site-title">Galerien</span>
+  <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Light/Dark Mode">
+    <svg class="theme-toggle__icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+    <div class="theme-toggle__knob"></div>
+    <svg class="theme-toggle__icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+  </div>
 </header>
 
 <main>
@@ -26,14 +35,24 @@
 </main>
 
 <script>
+// ── THEME ──
+function applyTheme(light) {
+  document.body.classList.toggle('light', light);
+  document.getElementById('theme-toggle').classList.toggle('on', light);
+}
+function toggleTheme() {
+  const light = !document.body.classList.contains('light');
+  localStorage.setItem('theme', light ? 'light' : 'dark');
+  applyTheme(light);
+}
+applyTheme(localStorage.getItem('theme') === 'light');
+
 const API = 'https://www.googleapis.com/drive/v3/files';
 
 async function loadConfig() {
   const r = await fetch('config.json');
   return r.json();
 }
-
-const API_KEY = 'AIzaSyA7yei6weD92EHoF30gkgLMqHH2hynQmu8';
 
 function thumbUrl(file, size = 600) {
   const lh3 = `https://lh3.googleusercontent.com/d/${file?.id || file}=s${size}`;
@@ -52,16 +71,32 @@ async function listFolders(rootId, apiKey) {
   return (await r.json()).files || [];
 }
 
+function isCoverFile(f) {
+  return /(cover|header)/i.test(f.name.replace(/\.[^.]+$/, ''));
+}
+
 async function getFirstImage(folderId, apiKey) {
+  const fields = encodeURIComponent('files(id,name)');
+  const [rc, rh] = await Promise.all([
+    fetch(`${API}?q=${encodeURIComponent(`'${folderId}' in parents and name contains 'cover' and mimeType contains 'image/' and trashed=false`)}&fields=${fields}&pageSize=5&key=${apiKey}`),
+    fetch(`${API}?q=${encodeURIComponent(`'${folderId}' in parents and name contains 'header' and mimeType contains 'image/' and trashed=false`)}&fields=${fields}&pageSize=5&key=${apiKey}`)
+  ]);
+  const candidates = [
+    ...(rc.ok ? (await rc.json()).files || [] : []),
+    ...(rh.ok ? (await rh.json()).files || [] : [])
+  ].filter(isCoverFile);
+  if (candidates.length > 0) {
+    return candidates.sort((a, b) => a.name.localeCompare(b.name))[0];
+  }
   const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
-  const url = `${API}?q=${q}&fields=${encodeURIComponent('files(id,thumbnailLink)')}&pageSize=1&orderBy=name&key=${apiKey}`;
+  const url = `${API}?q=${q}&fields=${fields}&pageSize=1&orderBy=name&key=${apiKey}`;
   const r = await fetch(url);
   if (!r.ok) return null;
   return (await r.json()).files?.[0] ?? null;
 }
 
 async function countImages(folderId, apiKey) {
-  const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
+  const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and not name contains 'cover' and not name contains 'header' and trashed=false`);
   const url = `${API}?q=${q}&fields=${encodeURIComponent('files(id)')}&pageSize=1000&key=${apiKey}`;
   const r = await fetch(url);
   if (!r.ok) return 0;
