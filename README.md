@@ -8,6 +8,9 @@ Statische Foto-Galerie-Website, die Bilder direkt aus Google Drive lädt. Gehost
 - Bilder werden über `wsrv.nl` als Proxy geladen (verhindert Google Rate-Limiting)
 - Service Worker cached alle Bilder lokal im Browser
 - Kein Backend, keine Datenbank – alles läuft im Browser
+- Sortierung nach `modifiedTime` (Änderungsdatum in Drive), älteste zuerst
+- Masonry-Grid mit CSS columns; Bilder werden vor dem Rendern umnummeriert, damit die Reihenfolge visuell von links nach rechts stimmt
+- Bilddimensionen (`imageMediaMetadata`) werden mit der API geladen und als `aspect-ratio` gesetzt, um Springen beim Lazy-Load zu verhindern
 
 ## Dateien
 
