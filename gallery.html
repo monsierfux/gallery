@@ -218,7 +218,7 @@ async function loadGallery(folderId, apiKey) {
   let all = [], pageToken = null;
   do {
     const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
-    const fields = encodeURIComponent('nextPageToken,files(id,name,modifiedTime)');
+    const fields = encodeURIComponent('nextPageToken,files(id,name,modifiedTime,imageMediaMetadata(width,height))');
     let url = `${API}?q=${q}&fields=${fields}&pageSize=100&key=${apiKey}`;
     if (pageToken) url += `&pageToken=${pageToken}`;
     const r = await fetch(url);
@@ -489,6 +489,9 @@ async function init() {
   function makeItem(file, idx) {
     const item = document.createElement('div');
     item.className = 'photo-item skeleton';
+    const w = file.imageMediaMetadata?.width;
+    const h = file.imageMediaMetadata?.height;
+    if (w && h) item.style.aspectRatio = `${w} / ${h}`;
     item.innerHTML = `
       <img data-src="${thumbUrl(file, 800)}" alt="${file.name}">
       <div class="photo-item__overlay">
