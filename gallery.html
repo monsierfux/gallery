@@ -502,22 +502,40 @@ async function init() {
     return item;
   }
 
+  const imageIndexMap = new Map(images.map((f, i) => [f.id, i]));
+
+  function reorderForColumns(files, cols) {
+    const n = files.length;
+    const colSize = Math.ceil(n / cols);
+    const result = [];
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < colSize; r++) {
+        const idx = r * cols + c;
+        if (idx < n) result.push(files[idx]);
+      }
+    }
+    return result;
+  }
+
+  function getColCount() {
+    return window.innerWidth <= 900 ? 2 : 4;
+  }
+
   const wrap = document.getElementById('photo-grid-wrap');
   wrap.innerHTML = '';
 
   if (sections.length === 0) {
     const grid = document.createElement('div');
     grid.className = 'photo-grid';
-    rootFiles.forEach((file, i) => grid.appendChild(makeItem(file, i)));
+    reorderForColumns(rootFiles, getColCount()).forEach(file => grid.appendChild(makeItem(file, imageIndexMap.get(file.id))));
     wrap.appendChild(grid);
   } else {
     if (rootFiles.length > 0) {
       const grid = document.createElement('div');
       grid.className = 'photo-grid';
-      rootFiles.forEach((file, i) => grid.appendChild(makeItem(file, i)));
+      reorderForColumns(rootFiles, getColCount()).forEach(file => grid.appendChild(makeItem(file, imageIndexMap.get(file.id))));
       wrap.appendChild(grid);
     }
-    let offset = rootFiles.length;
     sections.forEach(section => {
       const group = document.createElement('div');
       group.className = 'photo-section-group';
@@ -528,10 +546,9 @@ async function init() {
       group.appendChild(h);
       const grid = document.createElement('div');
       grid.className = 'photo-grid';
-      section.files.forEach((file, i) => grid.appendChild(makeItem(file, offset + i)));
+      reorderForColumns(section.files, getColCount()).forEach(file => grid.appendChild(makeItem(file, imageIndexMap.get(file.id))));
       group.appendChild(grid);
       wrap.appendChild(group);
-      offset += section.files.length;
     });
   }
 

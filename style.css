@@ -222,14 +222,13 @@ a { color: inherit; text-decoration: none; }
 }
 
 .photo-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--gap);
-  align-items: start;
+  columns: 4;
+  column-gap: var(--gap);
 }
 
 .photo-item {
-  margin-bottom: 0;
+  break-inside: avoid;
+  margin-bottom: var(--gap);
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -1096,11 +1095,11 @@ body.variant-atelier .section-heading {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
-  .photo-grid { grid-template-columns: repeat(2, 1fr); }
+  .photo-grid { columns: 2; }
   .gallery-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 600px) {
-  .photo-grid { grid-template-columns: repeat(2, 1fr); }
+  .photo-grid { columns: 2; }
   .gallery-grid { grid-template-columns: 1fr; }
   .gallery-hero__bottom { padding: 0 20px 32px; }
   .gallery-hero__title { font-size: 1.2rem; white-space: normal; }
