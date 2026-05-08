@@ -218,7 +218,7 @@ async function loadGallery(folderId, apiKey) {
   let all = [], pageToken = null;
   do {
     const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
-    const fields = encodeURIComponent('nextPageToken,files(id,name,createdTime)');
+    const fields = encodeURIComponent('nextPageToken,files(id,name,modifiedTime)');
     let url = `${API}?q=${q}&fields=${fields}&pageSize=100&key=${apiKey}`;
     if (pageToken) url += `&pageToken=${pageToken}`;
     const r = await fetch(url);
@@ -227,7 +227,7 @@ async function loadGallery(folderId, apiKey) {
     all = all.concat(data.files || []);
     pageToken = data.nextPageToken || null;
   } while (pageToken);
-  return all.sort((a, b) => (a.createdTime || '').localeCompare(b.createdTime || ''));
+  return all.sort((a, b) => (a.modifiedTime || '').localeCompare(b.modifiedTime || ''));
 }
 
 async function getFolderName(folderId, apiKey) {
