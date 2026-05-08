@@ -219,7 +219,7 @@ async function loadGallery(folderId, apiKey) {
   do {
     const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
     const fields = encodeURIComponent('nextPageToken,files(id,name)');
-    let url = `${API}?q=${q}&fields=${fields}&orderBy=name&pageSize=100&key=${apiKey}`;
+    let url = `${API}?q=${q}&fields=${fields}&orderBy=createdTime&pageSize=100&key=${apiKey}`;
     if (pageToken) url += `&pageToken=${pageToken}`;
     const r = await fetch(url);
     if (!r.ok) throw new Error(`Drive API Fehler: ${r.status}`);
